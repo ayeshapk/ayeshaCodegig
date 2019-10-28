@@ -116,15 +116,66 @@ const Op = Sequelize.Op;
 
 module.exports = {
 
-    homeFindAll: ()=>{
-     let domainGigs =  Gig.findAll();
-        console.log(domainGigs)
+    /*homeFindAll: async ()=>{
+     let domainGigs =  await Gig.findAll();
+        console.log("+++++", domainGigs)
      return domainGigs
- },
+ },*/
 
-  Post: function (req, res) {
+    /*homeFindAll:  ()=>{
+     let domainGigs =   Gig.findAll().then((domainGigs) => {
+         console.log("+++++", domainGigs)
+     });
+     return domainGigs
+ },*/
+
+    homeFindAll: ()=>{
+        return Gig.findAll().then((gigs) => {
+            console.log("+++++", gigs)
+             return  gigs
+        });
+
+    },
+
+    PostVariable: function ({title, technologies, budget, description, contact_email}) {
+
+
+        console.log('title',title)
+        console.log('technologies',technologies)
+        console.log('description',description)
+        console.log('contact_email',contact_email)
+        console.log('budget',budget)
+
+        if (!budget) {
+            budget = 'Unknown';
+        } else {
+            budget = `$${budget}`;
+        }
+
+        // Make lowercase and remove space after comma
+        technologies = technologies.toLowerCase().replace(/, /g, ',');
+
+        // Insert into table
+        return Gig.create({
+            title: title,
+            technologies: technologies,
+            description: description,
+            budget: budget,
+            contact_email: contact_email
+        })
+        .then(gig => {return gig})
+        //.then(gig => res.redirect('/gigs'))
+        .catch(err => console.log('err ++++++>',err));
+    },
+
+ /* Post: function (req, res) {
 
       let {title, technologies, budget, description, contact_email} = req.body;
+      console.log('title',title)
+      console.log('technologies',technologies)
+      console.log('description',description)
+      console.log('contact_email',contact_email)
+      console.log('budget',budget)
       let errors = [];
 
       // Validate Fields
@@ -151,6 +202,7 @@ module.exports = {
               description,
               contact_email
           });
+
       } else {
           if (!budget) {
               budget = 'Unknown';
@@ -168,11 +220,13 @@ module.exports = {
               description: description,
               budget: budget,
               contact_email: contact_email
-          }).then(gig => res.redirect('/gigs'))
-              .catch(err => console.log(err));
+          })
+              .then(gig => res.json(gig))
+              //.then(gig => res.redirect('/gigs'))
+              .catch(err => console.log('err ++++++>',err));
       }
-  },
-  getSearch: function (req, res) {
+  },*/
+  /*getSearch: function (req, res) {
       let {term} = req.query;
       // Make lowercase
       term = term.toLowerCase();
@@ -180,8 +234,70 @@ module.exports = {
       Gig.findAll({ where: { technologies: { [Op.like]: '%' + term + '%' } } }).then(gigs => res.render('gigs', { gigs }))
           .catch(err => console.log(err));
 
-  },
+  },*/
 
+    getSearchGig: function (term) {
+
+        // Make lowercase
+        term = term.toLowerCase();
+
+        return Gig.findAll({ where: { technologies: { [Op.like]: '%' + term + '%' } } })
+            .then(gigs => {return gigs })
+            .catch(err => console.log(err));
+
+    },
+
+/*
+ getSearch: function (req, res) {
+      let {term} = req.query;
+      // Make lowercase
+      term = term.toLowerCase();
+
+      Gig.findAll({ where: { technologies: { [Op.like]: '%' + term + '%' } } })
+            .then(gigs => res.render('gigs', { gigs }))
+            .catch(err => console.log(err));
+
+  },
+ */
+
+    updateData: async(postdata)=>{
+        console.log('postdata.id------',postdata.id)
+
+        let gig = await Gig.findOne( {where: {id: postdata.id}});
+        if(!gig) throw new Error('gig not found');
+        if(!postdata.id) throw new Error('id required for update gigs');
+        console.log('gig.id------*',gig.id.toString())
+        console.log('********',postdata.id === gig.id.toString())
+        if(postdata.id !== gig.id.toString()) throw new Error('id mismatched');
+
+        if (!postdata.budget) {
+            postdata.budget = 'Unknown';
+        } else {
+            postdata.budget = `$${postdata.budget}`;
+        }
+
+        // Make lowercase and remove space after comma
+        postdata.technologies = postdata.technologies.toLowerCase().replace(/, /g, ',');
+
+
+        await gig.update({title: postdata.title, technologies:postdata.technologies, budget:postdata.budget, description:postdata.description, contact_email:postdata.contact_email},{where: {id: postdata.id}});
+        return gig
+    },
+
+    deleteData: async(idNumber)=>{
+        //console.log('id Check ++++++-->',idNumber)
+        let gig = await Gig.findOne({ where: {id: idNumber} });
+        //console.log('id Check ++++++-->',idNumber)
+        //console.log('gig Check ++++++-->',gig)
+
+        if(gig){
+            await gig.destroy();
+            return true
+        } else {
+            return false
+        }
+
+    }
 
 };
 
